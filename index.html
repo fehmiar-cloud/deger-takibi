@@ -7,13 +7,15 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body{font-family:Arial;background:#f4f6f8;margin:0;padding:20px}
-    h1{margin-bottom:10px;text-align:center;color:#2c3e50;font-size:28px;font-weight:bold}
+    h1{margin-bottom:10px;text-align:center;color:#2c3e50;font-size:32px;font-weight:bold}
     .card{background:#fff;border-radius:8px;padding:20px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
     .row{display:flex;gap:15px;flex-wrap:wrap}
-    .kpi{flex:1;min-width:200px;font-size:14px;padding:10px;background:#ecf0f1;border-radius:8px;text-align:center}
+    .kpi{flex:1;min-width:200px;font-size:16px;padding:15px;background:#ecf0f1;border-radius:8px;text-align:center;transition: all 0.3s}
     .kpi span{font-weight:bold}
     .green{color:#2ecc71;font-weight:bold}
     .red{color:#e74c3c;font-weight:bold}
+    .arrow-up::before{content:"↑";color:#2ecc71;}
+    .arrow-down::before{content:"↓";color:#e74c3c;}
     input,button{padding:8px;margin:5px 0;border-radius:4px}
     button{cursor:pointer;background:#3498db;color:#fff;border:none;}
     button:hover{background:#2980b9}
@@ -21,47 +23,13 @@
     th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left}
     .scroll{max-height:220px;overflow-y:auto}
     select{padding:6px;border-radius:4px}
-    .kpi-header{font-size:20px;color:#34495e;font-weight:bold;margin-bottom:10px;}
+    .kpi-header{font-size:24px;color:#34495e;font-weight:bold;margin-bottom:10px;}
     .kpi-section{background-color:#ecf0f1;padding:20px;border-radius:8px;margin-top:20px;}
-    .arrow-up::before{content:"↑";color:#2ecc71;}
-    .arrow-down::before{content:"↓";color:#e74c3c;}
   </style>
 </head>
 <body>
 
 <h1>📊 Değer Takip Dashboard</h1>
-
-<!-- Özet Dashboard ve Tarih Seçenekleri -->
-<div class="card">
-  <div class="kpi-section">
-    <h3 class="kpi-header">Özet Dashboard</h3>
-    <div class="row">
-      <div class="kpi">
-        <span>Mevcut Değer:</span>
-        <p id="generalValue">-</p>
-      </div>
-      <div class="kpi">
-        <span>Kar (TL):</span>
-        <p id="kpiDiff">-</p>
-      </div>
-      <div class="kpi">
-        <span>Değişim (%) :</span>
-        <p id="kpiPct">-</p>
-      </div>
-    </div>
-    <div class="row">
-      <select id="presetRange" onchange="calculateTopRange()">
-        <option value="7">Son 7 Gün</option>
-        <option value="30">Son 30 Gün</option>
-        <option value="365">Son 1 Yıl</option>
-        <option value="custom">Özel</option>
-      </select>
-      <input type="date" id="topStart" placeholder="Başlangıç Tarihi">
-      <input type="date" id="topEnd" placeholder="Bitiş Tarihi">
-    </div>
-    <button onclick="calculateTopRange()">Hesapla</button>
-  </div>
-</div>
 
 <!-- Günlük Değer Ekleme -->
 <div class="card">
@@ -238,24 +206,6 @@ function importCash(e){
 }
 
 function fmt(n){ return Number(n).toLocaleString('tr-TR'); }
-
-function calculateTopRange(){
-  let preset = document.getElementById('presetRange').value;
-  let end = new Date();
-  let start;
-  if(preset !== 'custom'){
-    start = new Date();
-    start.setDate(end.getDate()-Number(preset));
-  } else {
-    start = new Date(document.getElementById('topStart').value);
-    end = new Date(document.getElementById('topEnd').value);
-  }
-  let res = rangeCalc(start.toISOString().slice(0,10), end.toISOString().slice(0,10));
-  if(!res) return;
-  document.getElementById('generalValue').innerText = fmt(res.d);
-  document.getElementById('kpiDiff').innerText = fmt(res.d);
-  document.getElementById('kpiPct').innerText = res.p.toFixed(2) + '%';
-}
 
 render();
 </script>
