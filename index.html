@@ -2,187 +2,118 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Değer Takibi Dashboard</title>
+<title>Finans Dashboard v4</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-body {
-    font-family: -apple-system, BlinkMacSystemFont, Arial;
-    background: #f2f4f8;
-    margin: 20px;
-}
-h1 { margin-bottom: 10px; }
-
-.kpi-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
-    gap: 15px;
-    margin-bottom: 25px;
-}
-.kpi {
-    background: white;
-    padding: 15px;
-    border-radius: 10px;
-}
-.kpi h3 {
-    font-size: 14px;
-    color: #666;
-}
-.kpi p {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.section {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 25px;
-}
-
-input, button {
-    padding: 6px;
-    margin: 4px 0;
-}
-button {
-    cursor: pointer;
-}
-
-canvas {
-    margin-top: 20px;
-}
+body{font-family:-apple-system,Arial;background:#f3f4f6;margin:20px}
+.section{background:#fff;padding:20px;border-radius:14px;margin-bottom:25px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px}
+.kpi{padding:15px;border-radius:12px;background:#fafafa}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border-bottom:1px solid #ddd;padding:6px;font-size:14px}
+button{padding:6px 10px;margin:4px;cursor:pointer}
+input,select{padding:5px}
+.action{cursor:pointer;font-weight:bold}
+.delete{color:red}
+.edit{color:#2563eb}
 </style>
 </head>
 
 <body>
 
-<h1>📊 Değer Takibi Dashboard</h1>
+<h1>📊 Finans Dashboard</h1>
 
-<!-- KPI -->
-<div class="kpi-container">
-    <div class="kpi"><h3>Son Değer</h3><p id="kpiValue">-</p></div>
-    <div class="kpi"><h3>Günlük Değişim</h3><p id="kpiDaily">-</p></div>
-    <div class="kpi"><h3>Toplam Harcama</h3><p id="kpiExpense">-</p></div>
-    <div class="kpi"><h3>Son 7 Gün %</h3><p id="kpiWeekly">-</p></div>
+<div class="kpi-grid">
+  <div class="kpi"><b>Son Değer</b><div id="kpiValue">-</div></div>
+  <div class="kpi"><b>Günlük %</b><div id="kpiDaily">-</div></div>
+  <div class="kpi"><b>Toplam Harcama</b><div id="kpiExpense">-</div></div>
+  <div class="kpi"><b>7 Gün %</b><div id="kpiWeekly">-</div></div>
 </div>
 
-<!-- GİRİŞLER -->
 <div class="section">
-<h3>Günlük Değer</h3>
+<h3>📥 Günlük Değer</h3>
 <input type="date" id="valueDate">
-<input type="number" id="dailyValue" placeholder="Toplam Değer">
-<button onclick="addValue()">Kaydet</button>
+<input type="number" id="dailyValue">
+<button onclick="addValue()">Ekle</button>
+<button onclick="exportValues()">Excel</button>
+<table id="valueTable"></table>
+</div>
 
-<h3>Harcama</h3>
+<div class="section">
+<h3>💸 Harcama</h3>
 <input type="date" id="expenseDate">
-<input type="number" id="expenseAmount" placeholder="Tutar">
-<input type="text" id="expenseNote" placeholder="Açıklama">
+<input type="number" id="expenseAmount">
+<select id="expenseCategory">
+<option>Genel</option><option>Yemek</option><option>Ulaşım</option>
+<option>Ofis</option><option>Diğer</option>
+</select>
 <button onclick="addExpense()">Ekle</button>
+<button onclick="exportExpenses()">Excel</button>
+<table id="expenseTable"></table>
 </div>
 
-<!-- GRAFİKLER -->
-<div class="section">
-<h3>Değer Zaman Grafiği</h3>
-<canvas id="valueChart"></canvas>
-</div>
-
-<div class="section">
-<h3>Harcama Dağılımı</h3>
-<canvas id="expenseChart"></canvas>
-</div>
+<div class="section"><canvas id="valueChart"></canvas></div>
+<div class="section"><canvas id="expenseChart"></canvas></div>
 
 <script>
-let values = JSON.parse(localStorage.getItem("values")) || [];
-let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+let values=JSON.parse(localStorage.getItem("values"))||[];
+let expenses=JSON.parse(localStorage.getItem("expenses"))||[];
 
-function save() {
-    localStorage.setItem("values", JSON.stringify(values));
-    localStorage.setItem("expenses", JSON.stringify(expenses));
-    updateAll();
+function save(){localStorage.setItem("values",JSON.stringify(values));
+localStorage.setItem("expenses",JSON.stringify(expenses));updateAll();}
+
+function addValue(){values.push({date:valueDate.value,value:+dailyValue.value});save();}
+function addExpense(){expenses.push({date:expenseDate.value,amount:+expenseAmount.value,cat:expenseCategory.value});save();}
+
+function editValue(i){let v=prompt("Yeni değer",values[i].value);if(v){values[i].value=+v;save();}}
+function editExpense(i){let v=prompt("Yeni tutar",expenses[i].amount);if(v){expenses[i].amount=+v;save();}}
+
+function delValue(i){if(confirm("Silinsin mi?")){values.splice(i,1);save();}}
+function delExpense(i){if(confirm("Silinsin mi?")){expenses.splice(i,1);save();}}
+
+function exportCSV(data,name){
+let csv=Object.keys(data[0]).join(",")+"\n"+data.map(o=>Object.values(o).join(",")).join("\n");
+let a=document.createElement("a");
+a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+a.download=name+".csv";a.click();
 }
 
-function addValue() {
-    values.push({ date: valueDate.value, value: Number(dailyValue.value) });
-    values.sort((a,b)=>a.date.localeCompare(b.date));
-    save();
+const exportValues=()=>values.length&&exportCSV(values,"gunluk_degerler");
+const exportExpenses=()=>expenses.length&&exportCSV(expenses,"harcamalar");
+
+let vc,ec;
+function charts(){
+if(vc)vc.destroy();
+vc=new Chart(valueChart,{type:"line",
+data:{labels:values.map(v=>v.date),datasets:[{data:values.map(v=>v.value),fill:true}]}});
+let g={};expenses.forEach(e=>g[e.cat]=(g[e.cat]||0)+e.amount);
+if(ec)ec.destroy();
+ec=new Chart(expenseChart,{type:"pie",
+data:{labels:Object.keys(g),datasets:[{data:Object.values(g)}]}});
 }
 
-function addExpense() {
-    expenses.push({
-        date: expenseDate.value,
-        amount: Number(expenseAmount.value),
-        note: expenseNote.value || "Diğer"
-    });
-    save();
+function tables(){
+valueTable.innerHTML="<tr><th>Tarih</th><th>Değer</th><th></th></tr>"+
+values.map((v,i)=>`<tr><td>${v.date}</td><td>${v.value}</td>
+<td><span class="action edit" onclick="editValue(${i})">✎</span>
+<span class="action delete" onclick="delValue(${i})"> ✖</span></td></tr>`).join("");
+
+expenseTable.innerHTML="<tr><th>Tarih</th><th>Tutar</th><th>Kategori</th><th></th></tr>"+
+expenses.map((e,i)=>`<tr><td>${e.date}</td><td>${e.amount}</td><td>${e.cat}</td>
+<td><span class="action edit" onclick="editExpense(${i})">✎</span>
+<span class="action delete" onclick="delExpense(${i})"> ✖</span></td></tr>`).join("");
 }
 
-function updateKPIs() {
-    if (values.length < 2) return;
-
-    const last = values.at(-1);
-    const prev = values.at(-2);
-
-    document.getElementById("kpiValue").innerText = last.value.toLocaleString() + " TL";
-    document.getElementById("kpiDaily").innerText =
-        (((last.value - prev.value) / prev.value) * 100).toFixed(2) + "%";
-
-    document.getElementById("kpiExpense").innerText =
-        expenses.reduce((a,b)=>a+b.amount,0).toLocaleString() + " TL";
-
-    const weekAgo = values.find(v => v.date >= new Date(Date.now()-7*86400000).toISOString().slice(0,10));
-    if (weekAgo) {
-        document.getElementById("kpiWeekly").innerText =
-            (((last.value - weekAgo.value) / weekAgo.value) * 100).toFixed(2) + "%";
-    }
+function kpi(){
+if(values.length<2)return;
+let l=values.at(-1),p=values.at(-2);
+kpiValue.innerText=l.value;
+kpiDaily.innerText=(((l.value-p.value)/p.value)*100).toFixed(2)+"%";
+kpiExpense.innerText=expenses.reduce((a,b)=>a+b.amount,0);
 }
 
-let valueChart, expenseChart;
-
-function updateCharts() {
-    const ctx = document.getElementById("valueChart");
-
-    if (valueChart) valueChart.destroy();
-
-    valueChart = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: values.map(v=>v.date),
-            datasets: [{
-                label: "Toplam Değer",
-                data: values.map(v=>v.value),
-                fill: true,
-                borderColor: "#4f46e5",
-                backgroundColor: "rgba(79,70,229,0.15)",
-                tension: 0.3
-            }]
-        }
-    });
-
-    const grouped = {};
-    expenses.forEach(e => grouped[e.note] = (grouped[e.note] || 0) + e.amount);
-
-    const ctx2 = document.getElementById("expenseChart");
-    if (expenseChart) expenseChart.destroy();
-
-    expenseChart = new Chart(ctx2, {
-        type: "pie",
-        data: {
-            labels: Object.keys(grouped),
-            datasets: [{
-                data: Object.values(grouped),
-                backgroundColor: ["#6366f1","#22c55e","#f97316","#ef4444","#0ea5e9"]
-            }]
-        }
-    });
-}
-
-function updateAll() {
-    updateKPIs();
-    updateCharts();
-}
-
+function updateAll(){tables();charts();kpi();}
 updateAll();
 </script>
-
 </body>
 </html>
