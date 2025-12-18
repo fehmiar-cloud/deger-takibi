@@ -3,120 +3,190 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finans Dashboard v6</title>
+  <title>Değer Takip Dashboard v5 Final</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px }
-    .container { max-width:1200px; margin:auto }
-    h1 { margin-bottom:10px }
-    .kpi-box { display:grid; grid-template-columns: repeat(4,1fr); gap:15px; margin-bottom:20px }
-    .kpi { background:#fff; padding:15px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,.1) }
-    .kpi span { display:block; font-size:14px; color:#666 }
-    .kpi strong { font-size:20px }
-    .positive { color:green }
-    .negative { color:red }
-    .controls { background:#fff; padding:15px; border-radius:10px; margin-bottom:20px }
-    .controls select, .controls input, .controls button { margin-right:10px; padding:6px }
-    canvas { background:#fff; padding:15px; border-radius:10px }
-    .summary { background:#fff; margin-top:15px; padding:15px; border-radius:10px }
+    body { font-family: Arial, sans-serif; background:#f5f6fa; margin:0; padding:20px; }
+    h1 { margin-bottom:10px; }
+    .card { background:#fff; padding:15px; border-radius:8px; margin-bottom:15px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+    .row { display:flex; gap:15px; flex-wrap:wrap; }
+    .kpi { flex:1; min-width:200px; }
+    .green { color:#2ecc71; }
+    .red { color:#e74c3c; }
+    input, select, button { padding:6px; margin:4px 0; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border-bottom:1px solid #ddd; padding:6px; text-align:left; }
+    .scroll { max-height:220px; overflow-y:auto; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>Finans Dashboard v6</h1>
 
-  <!-- ÜST TARİH HESAPLAMA -->
-  <div class="controls">
-    <strong>Genel Performans Hesaplama:</strong><br><br>
-    <select id="presetRange">
-      <option value="7">Son 7 Gün</option>
-      <option value="30">Son 30 Gün</option>
-      <option value="365">Son 1 Yıl</option>
-      <option value="custom">Özel</option>
-    </select>
-    <input type="date" id="topStart" />
-    <input type="date" id="topEnd" />
-    <button onclick="calculateTopRange()">Hesapla</button>
-  </div>
+<h1>📊 Değer Takip Dashboard</h1>
 
-  <div class="kpi-box">
-    <div class="kpi"><span>Son Değer</span><strong id="lastValue">-</strong></div>
-    <div class="kpi"><span>Değişim (TL)</span><strong id="rangeDiff">-</strong></div>
-    <div class="kpi"><span>Değişim (%)</span><strong id="rangePct">-</strong></div>
-    <div class="kpi"><span>Nakit Çıkışı</span><strong id="rangeCash">-</strong></div>
-  </div>
+<div class="card">
+  <h3>Günlük Değer Ekle</h3>
+  <input type="date" id="valueDate">
+  <input type="number" id="valueAmount" placeholder="Toplam Değer">
+  <button onclick="addValue()">Ekle</button>
+</div>
 
-  <!-- GRAFİK TARİH ARALIĞI -->
-  <div class="controls">
-    <strong>Grafik Tarih Aralığı:</strong><br><br>
-    <input type="date" id="chartStart" />
-    <input type="date" id="chartEnd" />
-    <button onclick="updateChart()">Hesapla</button>
-  </div>
+<div class="card">
+  <h3>Nakit Çıkışı Ekle</h3>
+  <input type="date" id="cashDate">
+  <input type="number" id="cashAmount" placeholder="Tutar">
+  <input type="text" id="cashNote" placeholder="Açıklama">
+  <button onclick="addCash()">Ekle</button>
+</div>
 
-  <canvas id="lineChart" height="120"></canvas>
+<div class="card row">
+  <div class="kpi" id="kpi7"></div>
+  <div class="kpi" id="kpi30"></div>
+  <div class="kpi" id="kpi365"></div>
+</div>
 
-  <div class="summary">
-    <strong>Seçilen Tarih Aralığı Özeti</strong><br><br>
-    Kazanç / Kayıp: <span id="chartDiff">-</span><br>
-    Yüzde: <span id="chartPct">-</span><br>
-    Nakit Çıkışı: <span id="chartCash">-</span>
+<div class="card">
+  <h3>Tarih Aralığı Analizi</h3>
+  <input type="date" id="rangeStart">
+  <input type="date" id="rangeEnd">
+  <button onclick="analyzeRange()">Hesapla</button>
+  <p id="rangeResult"></p>
+  <p id="rangeCash"></p>
+</div>
+
+<div class="card">
+  <canvas id="chart"></canvas>
+</div>
+
+<div class="card">
+  <h3>Günlük Değerler</h3>
+  <div class="scroll">
+    <table id="valueTable"></table>
   </div>
 </div>
 
+<div class="card">
+  <h3>Nakit Çıkışları</h3>
+  <div class="scroll">
+    <table id="cashTable"></table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Excel Import / Export</h3>
+  <button onclick="exportData()">Export CSV</button>
+  <input type="file" onchange="importData(event)">
+</div>
+
 <script>
-let data = JSON.parse(localStorage.getItem('financeData') || '[]');
+let values = JSON.parse(localStorage.getItem('values')||'[]');
+let cashes = JSON.parse(localStorage.getItem('cashes')||'[]');
+let chart;
 
-function format(n){ return n.toLocaleString('tr-TR') }
-
-function calculateRange(start, end){
-  let filtered = data.filter(d => d.date >= start && d.date <= end);
-  if(filtered.length < 2) return null;
-  let first = filtered[0].value;
-  let last = filtered[filtered.length-1].value;
-  let cash = filtered.reduce((s,d)=> s + (d.cashOut||0),0);
-  return { diff:last-first, pct:((last-first)/first)*100, cash, last };
+function save(){
+  localStorage.setItem('values',JSON.stringify(values));
+  localStorage.setItem('cashes',JSON.stringify(cashes));
 }
 
-function calculateTopRange(){
-  let preset = document.getElementById('presetRange').value;
-  let end = new Date();
-  let start;
-  if(preset !== 'custom'){
-    start = new Date();
-    start.setDate(end.getDate()-Number(preset));
-  } else {
-    start = new Date(document.getElementById('topStart').value);
-    end = new Date(document.getElementById('topEnd').value);
-  }
-  let res = calculateRange(start.toISOString().slice(0,10), end.toISOString().slice(0,10));
-  if(!res) return;
-  document.getElementById('lastValue').innerText = format(res.last);
-  document.getElementById('rangeDiff').innerText = format(res.diff);
-  document.getElementById('rangePct').innerText = res.pct.toFixed(2)+'%';
-  document.getElementById('rangeCash').innerText = format(res.cash);
+function addValue(){
+  values.push({date:valueDate.value, amount:+valueAmount.value});
+  save(); render();
 }
 
-let ctx = document.getElementById('lineChart');
-let chart = new Chart(ctx,{
-  type:'line',
-  data:{ labels:[], datasets:[{ label:'Toplam Değer', data:[], tension:.3 }] },
-  options:{ responsive:true }
-});
-
-function updateChart(){
-  let s = document.getElementById('chartStart').value;
-  let e = document.getElementById('chartEnd').value;
-  let filtered = data.filter(d => d.date >= s && d.date <= e);
-  if(filtered.length < 2) return;
-  chart.data.labels = filtered.map(d=>d.date);
-  chart.data.datasets[0].data = filtered.map(d=>d.value);
-  chart.update();
-  let res = calculateRange(s,e);
-  document.getElementById('chartDiff').innerText = format(res.diff);
-  document.getElementById('chartPct').innerText = res.pct.toFixed(2)+'%';
-  document.getElementById('chartCash').innerText = format(res.cash);
+function addCash(){
+  cashes.push({date:cashDate.value, amount:+cashAmount.value, note:cashNote.value});
+  save(); render();
 }
+
+function calcRange(start,end){
+  let arr = values.filter(v=>v.date>=start && v.date<=end).sort((a,b)=>a.date.localeCompare(b.date));
+  if(arr.length<2) return null;
+  let diff = arr[arr.length-1].amount - arr[0].amount;
+  let pct = diff / arr[0].amount * 100;
+  return {diff,pct};
+}
+
+function cashRange(start,end){
+  return cashes.filter(c=>c.date>=start && c.date<=end)
+    .reduce((s,c)=>s+c.amount,0);
+}
+
+function analyzeRange(){
+  let r = calcRange(rangeStart.value, rangeEnd.value);
+  if(!r) return;
+  rangeResult.innerHTML = `Değişim: <b class="${r.diff>=0?'green':'red'}">${fmt(r.diff)} TL (${r.pct.toFixed(2)}%)</b>`;
+  rangeCash.innerHTML = `Toplam Nakit Çıkışı: ${fmt(cashRange(rangeStart.value,rangeEnd.value))} TL`;
+}
+
+function render(){
+  values.sort((a,b)=>a.date.localeCompare(b.date));
+
+  valueTable.innerHTML = '<tr><th>Tarih</th><th>Değer</th></tr>' +
+    values.map(v=>`<tr><td>${v.date}</td><td>${fmt(v.amount)}</td></tr>`).join('');
+
+  cashTable.innerHTML = '<tr><th>Tarih</th><th>Tutar</th><th>Açıklama</th></tr>' +
+    cashes.map(c=>`<tr><td>${c.date}</td><td>${fmt(c.amount)}</td><td>${c.note}</td></tr>`).join('');
+
+  drawChart(); calcKPIs();
+}
+
+function calcKPIs(){
+  let today = values[values.length-1]?.date;
+  if(!today) return;
+  setKPI('kpi7',7);
+  setKPI('kpi30',30);
+  setKPI('kpi365',365);
+}
+
+function setKPI(id,days){
+  let end = values[values.length-1].date;
+  let start = new Date(end);
+  start.setDate(start.getDate()-days);
+  start = start.toISOString().slice(0,10);
+  let r = calcRange(start,end);
+  document.getElementById(id).innerHTML = r ?
+    `${days} Gün: <b class="${r.diff>=0?'green':'red'}">${fmt(r.diff)} TL (${r.pct.toFixed(2)}%)</b>` : `${days} Gün: -`;
+}
+
+function drawChart(){
+  let ctx = document.getElementById('chart');
+  if(chart) chart.destroy();
+  chart = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels: values.map(v=>v.date),
+      datasets:[{label:'Değer', data: values.map(v=>v.amount), borderColor:'#3498db', fill:false}]
+    }
+  });
+}
+
+function fmt(n){ return n.toLocaleString('tr-TR'); }
+
+function exportData(){
+  let rows = ['type,date,amount,note'];
+  values.forEach(v=>rows.push(`value,${v.date},${v.amount},`));
+  cashes.forEach(c=>rows.push(`cash,${c.date},${c.amount},${c.note}`));
+  let blob = new Blob([rows.join('\n')],{type:'text/csv'});
+  let a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'data.csv'; a.click();
+}
+
+function importData(e){
+  let r = new FileReader();
+  r.onload=()=>{
+    let lines = r.result.split('\n').slice(1);
+    values=[]; cashes=[];
+    lines.forEach(l=>{
+      let [t,d,a,n]=l.split(',');
+      if(t==='value') values.push({date:d,amount:+a});
+      if(t==='cash') cashes.push({date:d,amount:+a,note:n});
+    });
+    save(); render();
+  };
+  r.readAsText(e.target.files[0]);
+}
+
+render();
 </script>
 </body>
 </html>
