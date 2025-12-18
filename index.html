@@ -24,20 +24,9 @@ th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left}
 
 <h1>📊 Değer Takip Dashboard</h1>
 
-<div class="card">
-<h3>Günlük Değer Ekle</h3>
-<input type="date" id="vDate">
-<input type="number" id="vAmount" placeholder="Toplam Değer">
-<button onclick="addValue()">Ekle</button>
-</div>
+<div class="card">\n<h3>Günlük Değer Ekle</h3>\n<input type="date" id="vDate">\n<input type="number" id="vAmount" placeholder="Toplam Değer">\n<button onclick="addValue()">Ekle</button>\n<br><br>\n<b>Import / Export (Değer)</b><br>\n<button onclick="exportValues()">⬇️ Export</button>\n<input type="file" accept=".csv" onchange="importValues(event)">\n</div>
 
-<div class="card">
-<h3>Nakit Çıkışı</h3>
-<input type="date" id="cDate">
-<input type="number" id="cAmount" placeholder="Tutar">
-<input type="text" id="cNote" placeholder="Açıklama">
-<button onclick="addCash()">Ekle</button>
-</div>
+<div class="card">\n<h3>Nakit Çıkışı</h3>\n<input type="date" id="cDate">\n<input type="number" id="cAmount" placeholder="Tutar">\n<input type="text" id="cNote" placeholder="Açıklama">\n<button onclick="addCash()">Ekle</button>\n<br><br>\n<b>Import / Export (Nakit)</b><br>\n<button onclick="exportCash()">⬇️ Export</button>\n<input type="file" accept=".csv" onchange="importCash(event)">\n</div>
 
 <div class="card row">
 <div class="kpi" id="kpi7"></div>
@@ -101,7 +90,7 @@ function setK(d,id){let e=values[values.length-1].date;let s=new Date(e);s.setDa
 
 function drawChart(){let ctx=document.getElementById('chart');if(chart)chart.destroy();chart=new Chart(ctx,{type:'line',data:{labels:values.map(v=>v.date),datasets:[{label:'Değer',data:values.map(v=>v.amount),borderColor:'#3498db',fill:false}]}})}
 
-function exportCSV(){let rows=['type,date,amount,note'];values.forEach(v=>rows.push(`value,${v.date},${v.amount},`));cashes.forEach(c=>rows.push(`cash,${c.date},${c.amount},${c.note}`));let b=new Blob([rows.join('\n')],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='dashboard-data.csv';a.click()}
+function exportValues(){\nlet rows=['date,amount'];\nvalues.forEach(v=>rows.push(`${v.date},${v.amount}`));\ndownload(rows.join('\n'),'values.csv')}\n\nfunction exportCash(){\nlet rows=['date,amount,note'];\ncashes.forEach(c=>rows.push(`${c.date},${c.amount},${c.note}`));\ndownload(rows.join('\n'),'cash.csv')}\n\nfunction download(text,name){let b=new Blob([text],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click()}\n\nfunction importValues(e){let r=new FileReader();r.onload=()=>{r.result.split('\n').slice(1).forEach(l=>{let[d,a]=l.split(',');if(d&&a)values.push({date:d,amount:+a})});save();render()};r.readAsText(e.target.files[0])}\n\nfunction importCash(e){let r=new FileReader();r.onload=()=>{r.result.split('\n').slice(1).forEach(l=>{let[d,a,n]=l.split(',');if(d&&a)cashes.push({date:d,amount:+a,note:n})});save();render()};r.readAsText(e.target.files[0])},${v.amount},`));cashes.forEach(c=>rows.push(`cash,${c.date},${c.amount},${c.note}`));let b=new Blob([rows.join('\n')],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='dashboard-data.csv';a.click()}
 
 function importCSV(e){let r=new FileReader();r.onload=()=>{values=[];cashes=[];r.result.split('\n').slice(1).forEach(l=>{let[t,d,a,n]=l.split(',');if(t==='value')values.push({date:d,amount:+a});if(t==='cash')cashes.push({date:d,amount:+a,note:n})});save();render()};r.readAsText(e.target.files[0])}
 
