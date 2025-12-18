@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body{font-family:Arial;background:#f4f6f8;margin:0;padding:20px}
-    h1{margin-bottom:10px;text-align:center;color:#2c3e50}
+    h1{margin-bottom:10px;text-align:center;color:#2c3e50;font-size:28px;font-weight:bold}
     .card{background:#fff;border-radius:8px;padding:20px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
     .row{display:flex;gap:15px;flex-wrap:wrap}
     .kpi{flex:1;min-width:200px;font-size:14px;padding:10px;background:#ecf0f1;border-radius:8px;text-align:center}
@@ -21,8 +21,10 @@
     th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left}
     .scroll{max-height:220px;overflow-y:auto}
     select{padding:6px;border-radius:4px}
-    .kpi-header{font-size:18px;color:#34495e;font-weight:bold;margin-bottom:10px;}
+    .kpi-header{font-size:20px;color:#34495e;font-weight:bold;margin-bottom:10px;}
     .kpi-section{background-color:#ecf0f1;padding:20px;border-radius:8px;margin-top:20px;}
+    .arrow-up::before{content:"↑";color:#2ecc71;}
+    .arrow-down::before{content:"↓";color:#e74c3c;}
   </style>
 </head>
 <body>
@@ -48,7 +50,7 @@
       </div>
     </div>
     <div class="row">
-      <select id="presetRange">
+      <select id="presetRange" onchange="calculateTopRange()">
         <option value="7">Son 7 Gün</option>
         <option value="30">Son 30 Gün</option>
         <option value="365">Son 1 Yıl</option>
@@ -56,8 +58,8 @@
       </select>
       <input type="date" id="topStart" placeholder="Başlangıç Tarihi">
       <input type="date" id="topEnd" placeholder="Bitiş Tarihi">
-      <button onclick="calculateTopRange()">Hesapla</button>
     </div>
+    <button onclick="calculateTopRange()">Hesapla</button>
   </div>
 </div>
 
@@ -179,7 +181,8 @@ function setK(d,id){
   s.setDate(s.getDate()-d);
   s=s.toISOString().slice(0,10);
   let r=rangeCalc(s,e);
-  document.getElementById(id).innerHTML=r?`${d} Gün: <span class="${r.d>=0?'green':'red'}">${fmt(r.d)} TL (${r.p.toFixed(2)}%)</span>`:`${d} Gün: -`
+  let arrowClass = r.d >= 0 ? 'arrow-up' : 'arrow-down';
+  document.getElementById(id).innerHTML=r?`${d} Gün: <span class="${r.d>=0?'green':'red'}">${fmt(r.d)} TL (${r.p.toFixed(2)}%) <span class="${arrowClass}"></span></span>`:`${d} Gün: -`
 }
 
 function drawChart(){
