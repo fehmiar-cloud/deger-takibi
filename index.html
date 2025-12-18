@@ -1,64 +1,84 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Değer Takip Dashboard – FINAL</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body{font-family:Arial;background:#f4f6f8;margin:0;padding:20px}
-h1{margin-bottom:10px}
-.card{background:#fff;border-radius:8px;padding:15px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
-.row{display:flex;gap:15px;flex-wrap:wrap}
-.kpi{flex:1;min-width:200px;font-size:14px}
-.green{color:#2ecc71;font-weight:bold}
-.red{color:#e74c3c;font-weight:bold}
-input,button{padding:6px;margin:4px 0}
-button{cursor:pointer}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left}
-.scroll{max-height:220px;overflow-y:auto}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Değer Takip Dashboard – FINAL</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body{font-family:Arial;background:#f4f6f8;margin:0;padding:20px}
+    h1{margin-bottom:10px}
+    .card{background:#fff;border-radius:8px;padding:15px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+    .row{display:flex;gap:15px;flex-wrap:wrap}
+    .kpi{flex:1;min-width:200px;font-size:14px}
+    .green{color:#2ecc71;font-weight:bold}
+    .red{color:#e74c3c;font-weight:bold}
+    input,button{padding:6px;margin:4px 0}
+    button{cursor:pointer}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left}
+    .scroll{max-height:220px;overflow-y:auto}
+  </style>
 </head>
 <body>
 
 <h1>📊 Değer Takip Dashboard</h1>
 
-<div class="card">\n<h3>Günlük Değer Ekle</h3>\n<input type="date" id="vDate">\n<input type="number" id="vAmount" placeholder="Toplam Değer">\n<button onclick="addValue()">Ekle</button>\n<br><br>\n<b>Import / Export (Değer)</b><br>\n<button onclick="exportValues()">⬇️ Export</button>\n<input type="file" accept=".csv" onchange="importValues(event)">\n</div>
-
-<div class="card">\n<h3>Nakit Çıkışı</h3>\n<input type="date" id="cDate">\n<input type="number" id="cAmount" placeholder="Tutar">\n<input type="text" id="cNote" placeholder="Açıklama">\n<button onclick="addCash()">Ekle</button>\n<br><br>\n<b>Import / Export (Nakit)</b><br>\n<button onclick="exportCash()">⬇️ Export</button>\n<input type="file" accept=".csv" onchange="importCash(event)">\n</div>
-
-<div class="card row">
-<div class="kpi" id="kpi7"></div>
-<div class="kpi" id="kpi30"></div>
-<div class="kpi" id="kpi365"></div>
-</div>
-
+<!-- Günlük Değer Ekleme -->
 <div class="card">
-<h3>Tarih Aralığı Analizi</h3>
-<input type="date" id="rStart">
-<input type="date" id="rEnd">
-<button onclick="analyze()">Hesapla</button>
-<div id="rResult"></div>
-<div id="rCash"></div>
+  <h3>Günlük Değer Ekle</h3>
+  <input type="date" id="vDate">
+  <input type="number" id="vAmount" placeholder="Toplam Değer">
+  <button onclick="addValue()">Ekle</button>
+  <br><br>
+  <b>Import / Export (Değer)</b><br>
+  <button onclick="exportValues()">⬇️ Export</button>
+  <input type="file" accept=".csv" onchange="importValues(event)">
 </div>
 
+<!-- Nakit Çıkışı Ekleme -->
+<div class="card">
+  <h3>Nakit Çıkışı</h3>
+  <input type="date" id="cDate">
+  <input type="number" id="cAmount" placeholder="Tutar">
+  <input type="text" id="cNote" placeholder="Açıklama">
+  <button onclick="addCash()">Ekle</button>
+  <br><br>
+  <b>Import / Export (Nakit)</b><br>
+  <button onclick="exportCash()">⬇️ Export</button>
+  <input type="file" accept=".csv" onchange="importCash(event)">
+</div>
+
+<!-- KPI ve Değer Analizi -->
+<div class="card row">
+  <div class="kpi" id="kpi7"></div>
+  <div class="kpi" id="kpi30"></div>
+  <div class="kpi" id="kpi365"></div>
+</div>
+
+<!-- Tarih Aralığı Analizi -->
+<div class="card">
+  <h3>Tarih Aralığı Analizi</h3>
+  <input type="date" id="rStart">
+  <input type="date" id="rEnd">
+  <button onclick="analyze()">Hesapla</button>
+  <div id="rResult"></div>
+  <div id="rCash"></div>
+</div>
+
+<!-- Grafik Görüntüleme -->
 <div class="card"><canvas id="chart"></canvas></div>
 
+<!-- Günlük Değerler Tablosu -->
 <div class="card">
-<h3>Günlük Değerler</h3>
-<div class="scroll"><table id="vTable"></table></div>
+  <h3>Günlük Değerler</h3>
+  <div class="scroll"><table id="vTable"></table></div>
 </div>
 
+<!-- Nakit Çıkışları Tablosu -->
 <div class="card">
-<h3>Nakit Çıkışları</h3>
-<div class="scroll"><table id="cTable"></table></div>
-</div>
-
-<div class="card">
-<h3>Import / Export</h3>
-<button onclick="exportCSV()">⬇️ Export CSV</button><br>
-<input type="file" id="fileInput" accept=".csv" onchange="importCSV(event)">
+  <h3>Nakit Çıkışları</h3>
+  <div class="scroll"><table id="cTable"></table></div>
 </div>
 
 <script>
@@ -67,35 +87,120 @@ let cashes=JSON.parse(localStorage.getItem('cashes')||'[]');
 let chart;
 
 function save(){
-localStorage.setItem('values',JSON.stringify(values));
-localStorage.setItem('cashes',JSON.stringify(cashes));
+  localStorage.setItem('values',JSON.stringify(values));
+  localStorage.setItem('cashes',JSON.stringify(cashes));
 }
 
-function addValue(){values.push({date:vDate.value,amount:+vAmount.value});save();render()}
-function addCash(){cashes.push({date:cDate.value,amount:+cAmount.value,note:cNote.value});save();render()}
+function addValue(){
+  values.push({date:vDate.value,amount:+vAmount.value});
+  save();
+  render();
+}
 
-function rangeCalc(s,e){let a=values.filter(x=>x.date>=s&&x.date<=e).sort((a,b)=>a.date.localeCompare(b.date));if(a.length<2)return null;let d=a[a.length-1].amount-a[0].amount;return{d,p:d/a[0].amount*100}}
-function cashSum(s,e){return cashes.filter(c=>c.date>=s&&c.date<=e).reduce((t,c)=>t+c.amount,0)}
+function addCash(){
+  cashes.push({date:cDate.value,amount:+cAmount.value,note:cNote.value});
+  save();
+  render();
+}
 
-function analyze(){let r=rangeCalc(rStart.value,rEnd.value);if(!r)return;rResult.innerHTML=`<span class="${r.d>=0?'green':'red'}">${fmt(r.d)} TL (${r.p.toFixed(2)}%)</span>`;rCash.innerHTML=`Toplam Nakit Çıkışı: ${fmt(cashSum(rStart.value,rEnd.value))} TL`}
+function rangeCalc(s,e){
+  let a=values.filter(x=>x.date>=s&&x.date<=e).sort((a,b)=>a.date.localeCompare(b.date));
+  if(a.length<2) return null;
+  let d=a[a.length-1].amount-a[0].amount;
+  return{d,p:d/a[0].amount*100}
+}
+
+function cashSum(s,e){
+  return cashes.filter(c=>c.date>=s&&c.date<=e).reduce((t,c)=>t+c.amount,0)
+}
+
+function analyze(){
+  let r=rangeCalc(rStart.value,rEnd.value);
+  if(!r) return;
+  rResult.innerHTML=`<span class="${r.d>=0?'green':'red'}">${fmt(r.d)} TL (${r.p.toFixed(2)}%)</span>`;
+  rCash.innerHTML=`Toplam Nakit Çıkışı: ${fmt(cashSum(rStart.value,rEnd.value))} TL`
+}
 
 function render(){
-values.sort((a,b)=>a.date.localeCompare(b.date));
-vTable.innerHTML='<tr><th>Tarih</th><th>Değer</th></tr>'+values.map(v=>`<tr><td>${v.date}</td><td>${fmt(v.amount)}</td></tr>`).join('');
-cTable.innerHTML='<tr><th>Tarih</th><th>Tutar</th><th>Açıklama</th></tr>'+cashes.map(c=>`<tr><td>${c.date}</td><td>${fmt(c.amount)}</td><td>${c.note}</td></tr>`).join('');
-drawChart();calcKPI();}
+  values.sort((a,b)=>a.date.localeCompare(b.date));
+  vTable.innerHTML='<tr><th>Tarih</th><th>Değer</th></tr>'+values.map(v=>`<tr><td>${v.date}</td><td>${fmt(v.amount)}</td></tr>`).join('');
+  cTable.innerHTML='<tr><th>Tarih</th><th>Tutar</th><th>Açıklama</th></tr>'+cashes.map(c=>`<tr><td>${c.date}</td><td>${fmt(c.amount)}</td><td>${c.note}</td></tr>`).join('');
+  drawChart();
+  calcKPI();
+}
 
-function calcKPI(){if(values.length<2)return;setK(7,'kpi7');setK(30,'kpi30');setK(365,'kpi365')}
-function setK(d,id){let e=values[values.length-1].date;let s=new Date(e);s.setDate(s.getDate()-d);s=s.toISOString().slice(0,10);let r=rangeCalc(s,e);document.getElementById(id).innerHTML=r?`${d} Gün: <span class="${r.d>=0?'green':'red'}">${fmt(r.d)} TL (${r.p.toFixed(2)}%)</span>`:`${d} Gün: -`}
+function calcKPI(){
+  if(values.length<2) return;
+  setK(7,'kpi7');
+  setK(30,'kpi30');
+  setK(365,'kpi365')
+}
 
-function drawChart(){let ctx=document.getElementById('chart');if(chart)chart.destroy();chart=new Chart(ctx,{type:'line',data:{labels:values.map(v=>v.date),datasets:[{label:'Değer',data:values.map(v=>v.amount),borderColor:'#3498db',fill:false}]}})}
+function setK(d,id){
+  let e=values[values.length-1].date;
+  let s=new Date(e);
+  s.setDate(s.getDate()-d);
+  s=s.toISOString().slice(0,10);
+  let r=rangeCalc(s,e);
+  document.getElementById(id).innerHTML=r?`${d} Gün: <span class="${r.d>=0?'green':'red'}">${fmt(r.d)} TL (${r.p.toFixed(2)}%)</span>`:`${d} Gün: -`
+}
 
-function exportValues(){\nlet rows=['date,amount'];\nvalues.forEach(v=>rows.push(`${v.date},${v.amount}`));\ndownload(rows.join('\n'),'values.csv')}\n\nfunction exportCash(){\nlet rows=['date,amount,note'];\ncashes.forEach(c=>rows.push(`${c.date},${c.amount},${c.note}`));\ndownload(rows.join('\n'),'cash.csv')}\n\nfunction download(text,name){let b=new Blob([text],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click()}\n\nfunction importValues(e){let r=new FileReader();r.onload=()=>{r.result.split('\n').slice(1).forEach(l=>{let[d,a]=l.split(',');if(d&&a)values.push({date:d,amount:+a})});save();render()};r.readAsText(e.target.files[0])}\n\nfunction importCash(e){let r=new FileReader();r.onload=()=>{r.result.split('\n').slice(1).forEach(l=>{let[d,a,n]=l.split(',');if(d&&a)cashes.push({date:d,amount:+a,note:n})});save();render()};r.readAsText(e.target.files[0])},${v.amount},`));cashes.forEach(c=>rows.push(`cash,${c.date},${c.amount},${c.note}`));let b=new Blob([rows.join('\n')],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='dashboard-data.csv';a.click()}
+function drawChart(){
+  let ctx=document.getElementById('chart');
+  if(chart) chart.destroy();
+  chart=new Chart(ctx,{type:'line',data:{labels:values.map(v=>v.date),datasets:[{label:'Değer',data:values.map(v=>v.amount),borderColor:'#3498db',fill:false}]}})
+}
 
-function importCSV(e){let r=new FileReader();r.onload=()=>{values=[];cashes=[];r.result.split('\n').slice(1).forEach(l=>{let[t,d,a,n]=l.split(',');if(t==='value')values.push({date:d,amount:+a});if(t==='cash')cashes.push({date:d,amount:+a,note:n})});save();render()};r.readAsText(e.target.files[0])}
+function exportValues(){
+  let rows=['date,amount'];
+  values.forEach(v=>rows.push(`${v.date},${v.amount}`));
+  download(rows.join('\n'),'values.csv');
+}
 
-function fmt(n){return Number(n).toLocaleString('tr-TR')}
+function exportCash(){
+  let rows=['date,amount,note'];
+  cashes.forEach(c=>rows.push(`${c.date},${c.amount},${c.note}`));
+  download(rows.join('\n'),'cash.csv');
+}
+
+function download(text,name){
+  let b=new Blob([text],{type:'text/csv'});
+  let a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download=name;
+  a.click();
+}
+
+function importValues(e){
+  let r=new FileReader();
+  r.onload=()=>{
+    r.result.split('\n').slice(1).forEach(l=>{
+      let[d,a]=l.split(',');
+      if(d&&a) values.push({date:d,amount:+a});
+    });
+    save();
+    render();
+  };
+  r.readAsText(e.target.files[0]);
+}
+
+function importCash(e){
+  let r=new FileReader();
+  r.onload=()=>{
+    r.result.split('\n').slice(1).forEach(l=>{
+      let[d,a,n]=l.split(',');
+      if(d&&a) cashes.push({date:d,amount:+a,note:n});
+    });
+    save();
+    render();
+  };
+  r.readAsText(e.target.files[0]);
+}
+
+function fmt(n){ return Number(n).toLocaleString('tr-TR'); }
+
 render();
 </script>
+
 </body>
 </html>
