@@ -1,172 +1,122 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>Finans Dashboard v5</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body{font-family:-apple-system,Arial;background:#f3f4f6;margin:20px}
-h1{margin-bottom:10px}
-.section{background:#fff;padding:16px;border-radius:14px;margin-bottom:18px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-.kpi{background:#fafafa;padding:12px;border-radius:10px}
-.pos{color:#16a34a;font-weight:600}
-.neg{color:#dc2626;font-weight:600}
-.arrow{font-size:14px;margin-left:4px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left}
-.scroll{max-height:220px;overflow-y:auto}
-button{padding:6px 10px;margin:4px}
-input,select{padding:5px;margin:4px}
-.actions span{cursor:pointer;margin-right:6px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finans Dashboard v6</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px }
+    .container { max-width:1200px; margin:auto }
+    h1 { margin-bottom:10px }
+    .kpi-box { display:grid; grid-template-columns: repeat(4,1fr); gap:15px; margin-bottom:20px }
+    .kpi { background:#fff; padding:15px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,.1) }
+    .kpi span { display:block; font-size:14px; color:#666 }
+    .kpi strong { font-size:20px }
+    .positive { color:green }
+    .negative { color:red }
+    .controls { background:#fff; padding:15px; border-radius:10px; margin-bottom:20px }
+    .controls select, .controls input, .controls button { margin-right:10px; padding:6px }
+    canvas { background:#fff; padding:15px; border-radius:10px }
+    .summary { background:#fff; margin-top:15px; padding:15px; border-radius:10px }
+  </style>
 </head>
-
 <body>
+<div class="container">
+  <h1>Finans Dashboard v6</h1>
 
-<h1>📊 Finans Dashboard</h1>
+  <!-- ÜST TARİH HESAPLAMA -->
+  <div class="controls">
+    <strong>Genel Performans Hesaplama:</strong><br><br>
+    <select id="presetRange">
+      <option value="7">Son 7 Gün</option>
+      <option value="30">Son 30 Gün</option>
+      <option value="365">Son 1 Yıl</option>
+      <option value="custom">Özel</option>
+    </select>
+    <input type="date" id="topStart" />
+    <input type="date" id="topEnd" />
+    <button onclick="calculateTopRange()">Hesapla</button>
+  </div>
 
-<div class="kpis">
-  <div class="kpi"><b>Son Değer</b><div id="kpiLast">-</div></div>
-  <div class="kpi"><b>Günlük %</b><div id="kpiDaily">-</div></div>
-  <div class="kpi"><b>7 Gün %</b><div id="kpiWeekly">-</div></div>
-  <div class="kpi"><b>Aylık %</b><div id="kpiMonthly">-</div></div>
-  <div class="kpi"><b>Toplam Nakit Çıkışı</b><div id="kpiCash">-</div></div>
-</div>
+  <div class="kpi-box">
+    <div class="kpi"><span>Son Değer</span><strong id="lastValue">-</strong></div>
+    <div class="kpi"><span>Değişim (TL)</span><strong id="rangeDiff">-</strong></div>
+    <div class="kpi"><span>Değişim (%)</span><strong id="rangePct">-</strong></div>
+    <div class="kpi"><span>Nakit Çıkışı</span><strong id="rangeCash">-</strong></div>
+  </div>
 
-<div class="section">
-<h3>📥 Günlük Değer</h3>
-<input type="date" id="vDate">
-<input type="number" id="vValue" placeholder="Değer">
-<button onclick="addValue()">Ekle</button>
-<input type="file" onchange="importCSV(event,'values')">
-<button onclick="exportCSV(values,'gunluk_deger')">Export</button>
-<div class="scroll">
-<table id="valueTable"></table>
-</div>
-</div>
+  <!-- GRAFİK TARİH ARALIĞI -->
+  <div class="controls">
+    <strong>Grafik Tarih Aralığı:</strong><br><br>
+    <input type="date" id="chartStart" />
+    <input type="date" id="chartEnd" />
+    <button onclick="updateChart()">Hesapla</button>
+  </div>
 
-<div class="section">
-<h3>💸 Nakit Çıkışı (Kayıp Değil)</h3>
-<input type="date" id="cDate">
-<input type="number" id="cAmount" placeholder="Tutar">
-<input type="text" id="cNote" placeholder="Açıklama">
-<button onclick="addCash()">Ekle</button>
-<input type="file" onchange="importCSV(event,'cash')">
-<button onclick="exportCSV(cash,'nakit_cikis')">Export</button>
-<div class="scroll">
-<table id="cashTable"></table>
-</div>
-</div>
+  <canvas id="lineChart" height="120"></canvas>
 
-<div class="section">
-<h3>📅 Tarih Aralığı Performans</h3>
-<input type="date" id="from">
-<input type="date" id="to">
-<button onclick="rangeCalc()">Hesapla</button>
-<div id="rangeResult"></div>
-</div>
-
-<div class="section">
-<canvas id="chart"></canvas>
+  <div class="summary">
+    <strong>Seçilen Tarih Aralığı Özeti</strong><br><br>
+    Kazanç / Kayıp: <span id="chartDiff">-</span><br>
+    Yüzde: <span id="chartPct">-</span><br>
+    Nakit Çıkışı: <span id="chartCash">-</span>
+  </div>
 </div>
 
 <script>
-const fmt=n=>Number(n).toLocaleString("tr-TR");
-let values=JSON.parse(localStorage.getItem("values"))||[];
-let cash=JSON.parse(localStorage.getItem("cash"))||[];
+let data = JSON.parse(localStorage.getItem('financeData') || '[]');
 
-function save(){localStorage.setItem("values",JSON.stringify(values));
-localStorage.setItem("cash",JSON.stringify(cash));update();}
+function format(n){ return n.toLocaleString('tr-TR') }
 
-function addValue(){values.push({date:vDate.value,value:+vValue.value});save();}
-function addCash(){cash.push({date:cDate.value,amount:+cAmount.value,note:cNote.value});save();}
-
-function del(arr,i){if(confirm("Silinsin mi?")){arr.splice(i,1);save();}}
-function editVal(i){let v=prompt("Yeni değer",values[i].value);if(v){values[i].value=+v;save();}}
-function editCash(i){let v=prompt("Yeni tutar",cash[i].amount);if(v){cash[i].amount=+v;save();}}
-
-function pct(a,b){return ((b-a)/a)*100;}
-function arrow(p){return p>=0?'<span class="pos">▲</span>':'<span class="neg">▼</span>';}
-function col(p){return p>=0?'pos':'neg';}
-
-function kpis(){
-if(values.length<2)return;
-let last=values.at(-1).value;
-let prev=values.at(-2).value;
-let d=pct(prev,last);
-kpiLast.innerText=fmt(last);
-kpiDaily.innerHTML=`<span class="${col(d)}">${d.toFixed(2)}% ${arrow(d)}</span>`;
-
-let now=new Date(values.at(-1).date);
-let w=values.find(v=>(now-new Date(v.date))/(86400000)>=6);
-if(w){
-let wp=pct(w.value,last);
-kpiWeekly.innerHTML=`<span class="${col(wp)}">${wp.toFixed(2)}% ${arrow(wp)}</span>`;
+function calculateRange(start, end){
+  let filtered = data.filter(d => d.date >= start && d.date <= end);
+  if(filtered.length < 2) return null;
+  let first = filtered[0].value;
+  let last = filtered[filtered.length-1].value;
+  let cash = filtered.reduce((s,d)=> s + (d.cashOut||0),0);
+  return { diff:last-first, pct:((last-first)/first)*100, cash, last };
 }
 
-let m=values.find(v=>new Date(v.date).getMonth()!=now.getMonth());
-if(m){
-let mp=pct(m.value,last);
-kpiMonthly.innerHTML=`<span class="${col(mp)}">${mp.toFixed(2)}% ${arrow(mp)}</span>`;
+function calculateTopRange(){
+  let preset = document.getElementById('presetRange').value;
+  let end = new Date();
+  let start;
+  if(preset !== 'custom'){
+    start = new Date();
+    start.setDate(end.getDate()-Number(preset));
+  } else {
+    start = new Date(document.getElementById('topStart').value);
+    end = new Date(document.getElementById('topEnd').value);
+  }
+  let res = calculateRange(start.toISOString().slice(0,10), end.toISOString().slice(0,10));
+  if(!res) return;
+  document.getElementById('lastValue').innerText = format(res.last);
+  document.getElementById('rangeDiff').innerText = format(res.diff);
+  document.getElementById('rangePct').innerText = res.pct.toFixed(2)+'%';
+  document.getElementById('rangeCash').innerText = format(res.cash);
 }
 
-kpiCash.innerText=fmt(cash.reduce((a,b)=>a+b.amount,0));
-}
-
-let ch;
-function chartRender(data){
-if(ch)ch.destroy();
-ch=new Chart(chart,{type:"bar",
-data:{labels:data.map(v=>v.date),
-datasets:[{data:data.map(v=>v.value)}]}});
-}
-
-function rangeCalc(){
-let f=new Date(from.value),t=new Date(to.value);
-let r=values.filter(v=>new Date(v.date)>=f&&new Date(v.date)<=t);
-if(r.length<2)return;
-let p=pct(r[0].value,r.at(-1).value);
-let tl=r.at(-1).value-r[0].value;
-rangeResult.innerHTML=
-`<b>${p.toFixed(2)}%</b> (${fmt(tl)} TL)`;
-chartRender(r);
-}
-
-function tables(){
-valueTable.innerHTML="<tr><th>Tarih</th><th>Değer</th><th></th></tr>"+
-values.map((v,i)=>`<tr><td>${v.date}</td><td>${fmt(v.value)}</td>
-<td class="actions"><span onclick="editVal(${i})">✎</span><span onclick="del(values,${i})">✖</span></td></tr>`).join("");
-
-cashTable.innerHTML="<tr><th>Tarih</th><th>Tutar</th><th>Açıklama</th><th></th></tr>"+
-cash.map((c,i)=>`<tr><td>${c.date}</td><td>${fmt(c.amount)}</td><td>${c.note}</td>
-<td class="actions"><span onclick="editCash(${i})">✎</span><span onclick="del(cash,${i})">✖</span></td></tr>`).join("");
-}
-
-function exportCSV(data,name){
-let csv=Object.keys(data[0]).join(",")+"\n"+data.map(o=>Object.values(o).join(",")).join("\n");
-let a=document.createElement("a");
-a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-a.download=name+".csv";a.click();
-}
-
-function importCSV(e,type){
-let f=e.target.files[0];
-let r=new FileReader();
-r.onload=()=>{
-let l=r.result.split("\n").slice(1);
-l.forEach(x=>{
-let p=x.split(",");
-if(type=="values")values.push({date:p[0],value:+p[1]});
-else cash.push({date:p[0],amount:+p[1],note:p[2]||""});
+let ctx = document.getElementById('lineChart');
+let chart = new Chart(ctx,{
+  type:'line',
+  data:{ labels:[], datasets:[{ label:'Toplam Değer', data:[], tension:.3 }] },
+  options:{ responsive:true }
 });
-save();
-};
-r.readAsText(f);
-}
 
-function update(){tables();kpis();chartRender(values);}
-update();
+function updateChart(){
+  let s = document.getElementById('chartStart').value;
+  let e = document.getElementById('chartEnd').value;
+  let filtered = data.filter(d => d.date >= s && d.date <= e);
+  if(filtered.length < 2) return;
+  chart.data.labels = filtered.map(d=>d.date);
+  chart.data.datasets[0].data = filtered.map(d=>d.value);
+  chart.update();
+  let res = calculateRange(s,e);
+  document.getElementById('chartDiff').innerText = format(res.diff);
+  document.getElementById('chartPct').innerText = res.pct.toFixed(2)+'%';
+  document.getElementById('chartCash').innerText = format(res.cash);
+}
 </script>
 </body>
 </html>
