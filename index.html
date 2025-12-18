@@ -1,191 +1,111 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Değer Takip Dashboard v5 Final</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; background:#f5f6fa; margin:0; padding:20px; }
-    h1 { margin-bottom:10px; }
-    .card { background:#fff; padding:15px; border-radius:8px; margin-bottom:15px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
-    .row { display:flex; gap:15px; flex-wrap:wrap; }
-    .kpi { flex:1; min-width:200px; }
-    .green { color:#2ecc71; }
-    .red { color:#e74c3c; }
-    input, select, button { padding:6px; margin:4px 0; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { border-bottom:1px solid #ddd; padding:6px; text-align:left; }
-    .scroll { max-height:220px; overflow-y:auto; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Değer Takip Dashboard – FINAL</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial;background:#f4f6f8;margin:0;padding:20px}
+h1{margin-bottom:10px}
+.card{background:#fff;border-radius:8px;padding:15px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+.row{display:flex;gap:15px;flex-wrap:wrap}
+.kpi{flex:1;min-width:200px;font-size:14px}
+.green{color:#2ecc71;font-weight:bold}
+.red{color:#e74c3c;font-weight:bold}
+input,button{padding:6px;margin:4px 0}
+button{cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left}
+.scroll{max-height:220px;overflow-y:auto}
+</style>
 </head>
 <body>
 
 <h1>📊 Değer Takip Dashboard</h1>
 
 <div class="card">
-  <h3>Günlük Değer Ekle</h3>
-  <input type="date" id="valueDate">
-  <input type="number" id="valueAmount" placeholder="Toplam Değer">
-  <button onclick="addValue()">Ekle</button>
+<h3>Günlük Değer Ekle</h3>
+<input type="date" id="vDate">
+<input type="number" id="vAmount" placeholder="Toplam Değer">
+<button onclick="addValue()">Ekle</button>
 </div>
 
 <div class="card">
-  <h3>Nakit Çıkışı Ekle</h3>
-  <input type="date" id="cashDate">
-  <input type="number" id="cashAmount" placeholder="Tutar">
-  <input type="text" id="cashNote" placeholder="Açıklama">
-  <button onclick="addCash()">Ekle</button>
+<h3>Nakit Çıkışı</h3>
+<input type="date" id="cDate">
+<input type="number" id="cAmount" placeholder="Tutar">
+<input type="text" id="cNote" placeholder="Açıklama">
+<button onclick="addCash()">Ekle</button>
 </div>
 
 <div class="card row">
-  <div class="kpi" id="kpi7"></div>
-  <div class="kpi" id="kpi30"></div>
-  <div class="kpi" id="kpi365"></div>
+<div class="kpi" id="kpi7"></div>
+<div class="kpi" id="kpi30"></div>
+<div class="kpi" id="kpi365"></div>
 </div>
 
 <div class="card">
-  <h3>Tarih Aralığı Analizi</h3>
-  <input type="date" id="rangeStart">
-  <input type="date" id="rangeEnd">
-  <button onclick="analyzeRange()">Hesapla</button>
-  <p id="rangeResult"></p>
-  <p id="rangeCash"></p>
+<h3>Tarih Aralığı Analizi</h3>
+<input type="date" id="rStart">
+<input type="date" id="rEnd">
+<button onclick="analyze()">Hesapla</button>
+<div id="rResult"></div>
+<div id="rCash"></div>
+</div>
+
+<div class="card"><canvas id="chart"></canvas></div>
+
+<div class="card">
+<h3>Günlük Değerler</h3>
+<div class="scroll"><table id="vTable"></table></div>
 </div>
 
 <div class="card">
-  <canvas id="chart"></canvas>
+<h3>Nakit Çıkışları</h3>
+<div class="scroll"><table id="cTable"></table></div>
 </div>
 
 <div class="card">
-  <h3>Günlük Değerler</h3>
-  <div class="scroll">
-    <table id="valueTable"></table>
-  </div>
-</div>
-
-<div class="card">
-  <h3>Nakit Çıkışları</h3>
-  <div class="scroll">
-    <table id="cashTable"></table>
-  </div>
-</div>
-
-<div class="card">
-  <h3>Excel Import / Export</h3>
-  <button onclick="exportData()">Export CSV</button>
-  <input type="file" onchange="importData(event)">
+<h3>Import / Export</h3>
+<button onclick="exportCSV()">⬇️ Export CSV</button><br>
+<input type="file" id="fileInput" accept=".csv" onchange="importCSV(event)">
 </div>
 
 <script>
-let values = JSON.parse(localStorage.getItem('values')||'[]');
-let cashes = JSON.parse(localStorage.getItem('cashes')||'[]');
+let values=JSON.parse(localStorage.getItem('values')||'[]');
+let cashes=JSON.parse(localStorage.getItem('cashes')||'[]');
 let chart;
 
 function save(){
-  localStorage.setItem('values',JSON.stringify(values));
-  localStorage.setItem('cashes',JSON.stringify(cashes));
+localStorage.setItem('values',JSON.stringify(values));
+localStorage.setItem('cashes',JSON.stringify(cashes));
 }
 
-function addValue(){
-  values.push({date:valueDate.value, amount:+valueAmount.value});
-  save(); render();
-}
+function addValue(){values.push({date:vDate.value,amount:+vAmount.value});save();render()}
+function addCash(){cashes.push({date:cDate.value,amount:+cAmount.value,note:cNote.value});save();render()}
 
-function addCash(){
-  cashes.push({date:cashDate.value, amount:+cashAmount.value, note:cashNote.value});
-  save(); render();
-}
+function rangeCalc(s,e){let a=values.filter(x=>x.date>=s&&x.date<=e).sort((a,b)=>a.date.localeCompare(b.date));if(a.length<2)return null;let d=a[a.length-1].amount-a[0].amount;return{d,p:d/a[0].amount*100}}
+function cashSum(s,e){return cashes.filter(c=>c.date>=s&&c.date<=e).reduce((t,c)=>t+c.amount,0)}
 
-function calcRange(start,end){
-  let arr = values.filter(v=>v.date>=start && v.date<=end).sort((a,b)=>a.date.localeCompare(b.date));
-  if(arr.length<2) return null;
-  let diff = arr[arr.length-1].amount - arr[0].amount;
-  let pct = diff / arr[0].amount * 100;
-  return {diff,pct};
-}
-
-function cashRange(start,end){
-  return cashes.filter(c=>c.date>=start && c.date<=end)
-    .reduce((s,c)=>s+c.amount,0);
-}
-
-function analyzeRange(){
-  let r = calcRange(rangeStart.value, rangeEnd.value);
-  if(!r) return;
-  rangeResult.innerHTML = `Değişim: <b class="${r.diff>=0?'green':'red'}">${fmt(r.diff)} TL (${r.pct.toFixed(2)}%)</b>`;
-  rangeCash.innerHTML = `Toplam Nakit Çıkışı: ${fmt(cashRange(rangeStart.value,rangeEnd.value))} TL`;
-}
+function analyze(){let r=rangeCalc(rStart.value,rEnd.value);if(!r)return;rResult.innerHTML=`<span class="${r.d>=0?'green':'red'}">${fmt(r.d)} TL (${r.p.toFixed(2)}%)</span>`;rCash.innerHTML=`Toplam Nakit Çıkışı: ${fmt(cashSum(rStart.value,rEnd.value))} TL`}
 
 function render(){
-  values.sort((a,b)=>a.date.localeCompare(b.date));
+values.sort((a,b)=>a.date.localeCompare(b.date));
+vTable.innerHTML='<tr><th>Tarih</th><th>Değer</th></tr>'+values.map(v=>`<tr><td>${v.date}</td><td>${fmt(v.amount)}</td></tr>`).join('');
+cTable.innerHTML='<tr><th>Tarih</th><th>Tutar</th><th>Açıklama</th></tr>'+cashes.map(c=>`<tr><td>${c.date}</td><td>${fmt(c.amount)}</td><td>${c.note}</td></tr>`).join('');
+drawChart();calcKPI();}
 
-  valueTable.innerHTML = '<tr><th>Tarih</th><th>Değer</th></tr>' +
-    values.map(v=>`<tr><td>${v.date}</td><td>${fmt(v.amount)}</td></tr>`).join('');
+function calcKPI(){if(values.length<2)return;setK(7,'kpi7');setK(30,'kpi30');setK(365,'kpi365')}
+function setK(d,id){let e=values[values.length-1].date;let s=new Date(e);s.setDate(s.getDate()-d);s=s.toISOString().slice(0,10);let r=rangeCalc(s,e);document.getElementById(id).innerHTML=r?`${d} Gün: <span class="${r.d>=0?'green':'red'}">${fmt(r.d)} TL (${r.p.toFixed(2)}%)</span>`:`${d} Gün: -`}
 
-  cashTable.innerHTML = '<tr><th>Tarih</th><th>Tutar</th><th>Açıklama</th></tr>' +
-    cashes.map(c=>`<tr><td>${c.date}</td><td>${fmt(c.amount)}</td><td>${c.note}</td></tr>`).join('');
+function drawChart(){let ctx=document.getElementById('chart');if(chart)chart.destroy();chart=new Chart(ctx,{type:'line',data:{labels:values.map(v=>v.date),datasets:[{label:'Değer',data:values.map(v=>v.amount),borderColor:'#3498db',fill:false}]}})}
 
-  drawChart(); calcKPIs();
-}
+function exportCSV(){let rows=['type,date,amount,note'];values.forEach(v=>rows.push(`value,${v.date},${v.amount},`));cashes.forEach(c=>rows.push(`cash,${c.date},${c.amount},${c.note}`));let b=new Blob([rows.join('\n')],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='dashboard-data.csv';a.click()}
 
-function calcKPIs(){
-  let today = values[values.length-1]?.date;
-  if(!today) return;
-  setKPI('kpi7',7);
-  setKPI('kpi30',30);
-  setKPI('kpi365',365);
-}
+function importCSV(e){let r=new FileReader();r.onload=()=>{values=[];cashes=[];r.result.split('\n').slice(1).forEach(l=>{let[t,d,a,n]=l.split(',');if(t==='value')values.push({date:d,amount:+a});if(t==='cash')cashes.push({date:d,amount:+a,note:n})});save();render()};r.readAsText(e.target.files[0])}
 
-function setKPI(id,days){
-  let end = values[values.length-1].date;
-  let start = new Date(end);
-  start.setDate(start.getDate()-days);
-  start = start.toISOString().slice(0,10);
-  let r = calcRange(start,end);
-  document.getElementById(id).innerHTML = r ?
-    `${days} Gün: <b class="${r.diff>=0?'green':'red'}">${fmt(r.diff)} TL (${r.pct.toFixed(2)}%)</b>` : `${days} Gün: -`;
-}
-
-function drawChart(){
-  let ctx = document.getElementById('chart');
-  if(chart) chart.destroy();
-  chart = new Chart(ctx,{
-    type:'line',
-    data:{
-      labels: values.map(v=>v.date),
-      datasets:[{label:'Değer', data: values.map(v=>v.amount), borderColor:'#3498db', fill:false}]
-    }
-  });
-}
-
-function fmt(n){ return n.toLocaleString('tr-TR'); }
-
-function exportData(){
-  let rows = ['type,date,amount,note'];
-  values.forEach(v=>rows.push(`value,${v.date},${v.amount},`));
-  cashes.forEach(c=>rows.push(`cash,${c.date},${c.amount},${c.note}`));
-  let blob = new Blob([rows.join('\n')],{type:'text/csv'});
-  let a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'data.csv'; a.click();
-}
-
-function importData(e){
-  let r = new FileReader();
-  r.onload=()=>{
-    let lines = r.result.split('\n').slice(1);
-    values=[]; cashes=[];
-    lines.forEach(l=>{
-      let [t,d,a,n]=l.split(',');
-      if(t==='value') values.push({date:d,amount:+a});
-      if(t==='cash') cashes.push({date:d,amount:+a,note:n});
-    });
-    save(); render();
-  };
-  r.readAsText(e.target.files[0]);
-}
-
+function fmt(n){return Number(n).toLocaleString('tr-TR')}
 render();
 </script>
 </body>
