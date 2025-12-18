@@ -7,17 +7,22 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body{font-family:Arial;background:#f4f6f8;margin:0;padding:20px}
-    h1{margin-bottom:10px}
-    .card{background:#fff;border-radius:8px;padding:15px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+    h1{margin-bottom:10px;text-align:center;color:#2c3e50}
+    .card{background:#fff;border-radius:8px;padding:20px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
     .row{display:flex;gap:15px;flex-wrap:wrap}
-    .kpi{flex:1;min-width:200px;font-size:14px}
+    .kpi{flex:1;min-width:200px;font-size:14px;padding:10px;background:#ecf0f1;border-radius:8px;text-align:center}
+    .kpi span{font-weight:bold}
     .green{color:#2ecc71;font-weight:bold}
     .red{color:#e74c3c;font-weight:bold}
-    input,button{padding:6px;margin:4px 0}
-    button{cursor:pointer}
+    input,button{padding:8px;margin:5px 0;border-radius:4px}
+    button{cursor:pointer;background:#3498db;color:#fff;border:none;}
+    button:hover{background:#2980b9}
     table{width:100%;border-collapse:collapse;font-size:13px}
     th,td{border-bottom:1px solid #ddd;padding:6px;text-align:left}
     .scroll{max-height:220px;overflow-y:auto}
+    select{padding:6px;border-radius:4px}
+    .kpi-header{font-size:18px;color:#34495e;font-weight:bold;margin-bottom:10px;}
+    .kpi-section{background-color:#ecf0f1;padding:20px;border-radius:8px;margin-top:20px;}
   </style>
 </head>
 <body>
@@ -26,32 +31,33 @@
 
 <!-- Özet Dashboard ve Tarih Seçenekleri -->
 <div class="card">
-  <h3>Özet Dashboard</h3>
-  <div class="row">
-    <div class="kpi">
-      <strong>Genel Değer:</strong>
-      <span id="generalValue">-</span>
+  <div class="kpi-section">
+    <h3 class="kpi-header">Özet Dashboard</h3>
+    <div class="row">
+      <div class="kpi">
+        <span>Mevcut Değer:</span>
+        <p id="generalValue">-</p>
+      </div>
+      <div class="kpi">
+        <span>Kar (TL):</span>
+        <p id="kpiDiff">-</p>
+      </div>
+      <div class="kpi">
+        <span>Değişim (%) :</span>
+        <p id="kpiPct">-</p>
+      </div>
     </div>
-    <div class="kpi">
-      <strong>7 Gün Değişim:</strong>
-      <span id="kpi7">-</span>
+    <div class="row">
+      <select id="presetRange">
+        <option value="7">Son 7 Gün</option>
+        <option value="30">Son 30 Gün</option>
+        <option value="365">Son 1 Yıl</option>
+        <option value="custom">Özel</option>
+      </select>
+      <input type="date" id="topStart" placeholder="Başlangıç Tarihi">
+      <input type="date" id="topEnd" placeholder="Bitiş Tarihi">
+      <button onclick="calculateTopRange()">Hesapla</button>
     </div>
-    <div class="kpi">
-      <strong>30 Gün Değişim:</strong>
-      <span id="kpi30">-</span>
-    </div>
-    <div class="kpi">
-      <strong>1 Yıl Değişim:</strong>
-      <span id="kpi365">-</span>
-    </div>
-  </div>
-  <div class="row">
-    <select id="presetRange">
-      <option value="7">Son 7 Gün</option>
-      <option value="30">Son 30 Gün</option>
-      <option value="365">Son 1 Yıl</option>
-    </select>
-    <button onclick="calculateTopRange()">Hesapla</button>
   </div>
 </div>
 
@@ -244,9 +250,8 @@ function calculateTopRange(){
   let res = rangeCalc(start.toISOString().slice(0,10), end.toISOString().slice(0,10));
   if(!res) return;
   document.getElementById('generalValue').innerText = fmt(res.d);
-  document.getElementById('kpi7').innerText = fmt(res.d);
-  document.getElementById('kpi30').innerText = fmt(res.d);
-  document.getElementById('kpi365').innerText = fmt(res.d);
+  document.getElementById('kpiDiff').innerText = fmt(res.d);
+  document.getElementById('kpiPct').innerText = res.p.toFixed(2) + '%';
 }
 
 render();
