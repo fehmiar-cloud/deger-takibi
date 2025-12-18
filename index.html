@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Değer Takibi</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { font-family: Arial; max-width: 900px; margin: auto; padding: 15px; }
+input, select, button { width: 100%; padding: 8px; margin: 5px 0; }
+h2 { margin-top: 25px; }
+.card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h1>Değer Takibi</h1>
+
+<div class="card">
+<h2>Günlük Toplam</h2>
+<input type="date" id="date">
+<input type="number" id="total" placeholder="Kasadaki Toplam">
+<button onclick="addDaily()">Kaydet</button>
+</div>
+
+<div class="card">
+<h2>Nakit Çıkışı</h2>
+<input type="number" id="outAmount" placeholder="Tutar">
+<select id="type">
+  <option value="value">Değere Dönüşen (Stok / Yatırım)</option>
+  <option value="expense">Gerçek Harcama</option>
+</select>
+<button onclick="addOut()">Ekle</button>
+</div>
+
+<div class="card">
+<h2>Özet</h2>
+<p><strong>Toplam Nakit Çıkışı:</strong> <span id="cashOutSum">0</span></p>
+<p><strong>Değere Dönüşen Çıkış:</strong> <span id="valueOutSum">0</span></p>
+</div>
+
+<div class="card">
+<h2>Gerçek Değer Grafiği</h2>
+<canvas id="chart"></canvas>
+</div>
+
+<script>
+let daily = JSON.parse(localStorage.getItem("daily") || "[]");
+let outs = JSON.parse(localStorage.getItem("outs") || "[]");
+
+function addDaily() {
+  daily.push({ date: date.value, total: Number(total.value) });
+  save();
+}
+
+function addOut() {
+  outs.push({
+    date: date.value,
+    amount: Number(outAmount.value),
+    type: type.value
+  });
+  save();
+}
+
+function cashOutTotals() {
+  let total = 0, value = 0;
+  outs.forEach(o => {
+    total += o.amount;
+    if (o.type === "value") value += o.amount;
+  });
+  document.getElementById("cashOutSum").innerText = total.toFixed(2);
+  document.getElementById("valueOutSum").innerText = value.toFixed(2);
+}
+
+function draw() {
+  const labels = daily.map(d => d.date);
+  const data = daily.map(d => d.total);
+
+  if (window.c) window.c.destroy();
+  window.c = new Chart(document.getElementById("chart"), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Gerçek Değer (Kasadaki)',
+        data
+      }]
+    }
+  });
+}
+
+function save() {
+  localStorage.setItem("daily", JSON.stringify(daily));
+  localStorage.setItem("outs", JSON.stringify(outs));
+  draw();
+  cashOutTotals();
+}
+
+draw();
+cashOutTotals();
+</script>
+
+</body>
+</html>
